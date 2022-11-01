@@ -1,0 +1,65 @@
+
+import os
+import pyspark
+import pandas as pd 
+from pyspark.sql import SparkSession
+spark=SparkSession.builder.appName('Practice').getOrCreate()
+meta=pd.read_csv("book2.csv")  # book2.csv is metadatafile where sourcefile,targettfile,numerical column stored
+a=len(meta)
+
+for rw in range(0,a):  # rw will be like  row of metadata file
+    sf=meta.iat[rw,0] #sf is Source file variable
+    tf=meta.iat[rw,1] #tf is Target file variable
+    cl=meta.iat[rw,2] #cl is numeric column variable
+    dm=meta.iat[rw,3] #dm is delemeter variable
+
+      
+
+    print("comparison started for file", sf )
+    df2_pyspark=spark.read.csv(sf,sep=dm,header=True)
+    df3_pyspark=spark.read.csv(tf,sep=dm,header=True)
+
+    source_count=df2_pyspark.count()
+    target_count=df3_pyspark.count()
+    print("#"*50)
+
+    if source_count==target_count:
+        print("count is matching source count {} is equal to target count {} ".format(source_count,target_count))
+    else:
+        print("count is NOT matching source count {} is NOT equal to target count {} ".format(source_count,target_count))
+    print("#"*50)
+
+    source_column_sum=df2_pyspark.agg({cl:'sum'}).first()[0]
+    target_column_sum=df3_pyspark.agg({cl:'sum'}).first()[0]
+
+    if source_column_sum==target_column_sum :
+        print( "Column Sum is matching source column sum {} is equal to target column Sum {} ".format(source_column_sum,target_column_sum))
+    else:
+        print("Column Sum is NOT matching source column sum {} is NOT equal to target column Sum {} ".format(source_column_sum,target_column_sum))
+    print("#"*50)
+
+    source_file_size = os.path.getsize(sf)
+    target_file_size = os.path.getsize(tf)
+
+
+    if source_file_size==target_file_size:
+        print("Size is matching source Size {} is equal to target Size {} ".format(source_file_size,target_file_size))
+    else:
+        print("Size is NOT matching source Size {} is  NOT equal to target Size {} ".format(source_file_size,target_file_size))
+    print("#"*50)
+
+    
+    
+    try:
+        df2_pyspark.subtract(df3_pyspark).show()
+        
+    except:
+        print("Oops!", sys.exc_info()[0], "occurred.")
+    print("#"*50)
+
+    print("comparison completed for ",sf)
+    print('')
+    print("#"*50)
+        
+    del df2_pyspark
+    del df3_pyspark
